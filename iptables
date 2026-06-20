@@ -1,0 +1,44 @@
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+
+-A PREROUTING -d 172.16.2.2/32 -p tcp -m tcp --dport 8080 -j DNAT --to-destination 192.168.3.2:8080
+-A PREROUTING -d 172.16.2.2/32 -p tcp -m tcp --dport 2026 -j DNAT --to-destination 192.168.3.2:2026
+-A POSTROUTING -s 192.168.3.0/28 -o eth0 -j MASQUERADE
+
+COMMIT
+
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+-A INPUT -p tcp -m tcp --dport 2026 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 53 -j ACCEPT
+-A INPUT -p udp -m udp --dport 53 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p udp -m udp --dport 123 -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+
+-A INPUT -s 10.0.0.0/30 -j ACCEPT
+-A INPUT -s 172.16.2.0/28 -j ACCEPT
+-A INPUT -s 192.168.3.0/28 -j ACCEPT
+
+-A INPUT -p esp -j ACCEPT
+-A INPUT -p gre -j ACCEPT
+-A INPUT -p udp --dport 500 -j ACCEPT
+
+-A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A FORWARD -s 192.168.3.0/28 -o eth0 -j ACCEPT
+-A FORWARD -p tcp -d 192.168.3.2 --dport 8080 -j ACCEPT
+-A FORWARD -p tcp -d 192.168.3.2 --dport 2026 -j ACCEPT
+
+-A INPUT -j DROP
+
+COMMIT
